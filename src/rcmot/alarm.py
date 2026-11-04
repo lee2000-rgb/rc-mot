@@ -81,8 +81,13 @@ class Alarm:
     def counted(self, tracks) -> list:
         if not self.confirmed_only:
             return list(tracks)
+        cam_max = max(self.lost_grace_s, self.radar_only_grace_s)
         return [t for t in tracks if t.state == TrackState.CONFIRMED
-                or (t.state == TrackState.LOST and t.time_since_update <= self.lost_grace_s)
+                or (t.state == TrackState.LOST and t.time_since_update <= self.lost_grace_s
+                    # a radar-only track that misses one radar update turns LOST with a small time_since_update: it
+                    # still needs a camera within cam_max (else the radar-only limit is bypassed; found 11-04 by the
+                    # deck session in val_day_haltmid 46.98-47.11 s)
+                    and getattr(t, "time_since_camera", 0.0) <= cam_max)
                 or (t.state == TrackState.RADAR_ONLY
                     and getattr(t, "time_since_camera", float("inf")) <= self.radar_only_grace_s)]
 

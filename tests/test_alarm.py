@@ -95,3 +95,14 @@ def test_decide_is_stateful_and_play_is_separate():
 def test_zone_of():
     from rcmot.alarm import zone_of
     assert [zone_of(r, (3.0, 5.0, 10.0)) for r in (None, 1.0, 3.0, 4.0, 9.9, 10.1)] == [0, 3, 3, 2, 1, 0]
+
+
+def test_lost_needs_recent_camera():
+    """A radar-only track that misses one radar update is LOST with a small time_since_update; it must not bypass the
+    radar-only camera limit (11-04)."""
+    a = alarm(hysteresis=0.0)
+    assert a.update([mk(1, 2.0, TrackState.LOST, tsu=0.1, tcam=0.3)]) == 3        # just lost a camera track: counts
+    a.stop()
+    a = alarm(hysteresis=0.0)
+    assert a.update([mk(1, 2.0, TrackState.LOST, tsu=0.1, tcam=2.2)]) == 0        # ex-radar-only, camera 2.2 s ago
+    a.stop()
