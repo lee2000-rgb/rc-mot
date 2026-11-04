@@ -1020,9 +1020,10 @@ class WorkView(QtWidgets.QWidget):
         led = getattr(ws, "ledger", ())
         if led:
             c = led[-1]
-            big = (f"−{f(c['cut'], '.2f')} m³ 퍼냄" if np.isfinite(c["cut"]) else "") + \
+            pos = lambda v: max(v, 0.0) + 0.0 if np.isfinite(v) else v  # noqa: E731  (cut / fill are amounts: no "−-0.00")
+            big = (f"−{f(pos(c['cut']), '.2f')} m³ 퍼냄" if np.isfinite(c["cut"]) else "") + \
                   ("  " if np.isfinite(c["cut"]) and np.isfinite(c["fill"]) else "") + \
-                  (f"+{f(c['fill'], '.2f')} m³ 내려놓음" if np.isfinite(c["fill"]) else "")
+                  (f"+{f(pos(c['fill']), '.2f')} m³ 내려놓음" if np.isfinite(c["fill"]) else "")
             sub = (f"작업 전 {f(c['dig_before'], '.1f')} → 퍼낸 뒤 {f(c['dig_after'], '.1f')} m³" if np.isfinite(c["t_dig"]) else "") + \
                   (f" · 내려놓은 곳 {f(c['dump_before'], '.1f')} → {f(c['dump_after'], '.1f')} m³" if np.isfinite(c["t_dump"]) else "")
             C["last"].setText(self._card(f"이번 작업 ({len(led)}번째, 버킷 기준)", big or "–", sub, "#ffd08a"))
@@ -1055,8 +1056,8 @@ class WorkView(QtWidgets.QWidget):
         for r, c in enumerate(reversed(led)):                      # newest on top
             tt = c["t_dig"] if np.isfinite(c["t_dig"]) else c["t_dump"]
             vals = [str(len(led) - r), f(tt - t0, ".0f"), f(c["dig_before"], ".1f"), f(c["dig_after"], ".1f"),
-                    f(c["cut"]), f"{f(c['dump_before'], '.1f')} → {f(c['dump_after'], '.1f')}" if np.isfinite(c["t_dump"]) else "–",
-                    f(c["fill"])]
+                    f(max(c["cut"], 0.0) + 0.0 if np.isfinite(c["cut"]) else c["cut"]), f"{f(c['dump_before'], '.1f')} → {f(c['dump_after'], '.1f')}" if np.isfinite(c["t_dump"]) else "–",
+                    f(max(c["fill"], 0.0) + 0.0 if np.isfinite(c["fill"]) else c["fill"])]
             for k, v in enumerate(vals):
                 it = QtWidgets.QTableWidgetItem(v)
                 it.setTextAlignment(QtCore.Qt.AlignCenter)
