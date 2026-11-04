@@ -1,0 +1,124 @@
+# RC-MOT REPLAY configuration for the 2026-10-26 HDX Boryeong site bags (docs/22) on the PC: the AGX rig of
+# configs/hdx_agx_live.yaml with PyTorch weights (the AGX GUI script swaps in the TensorRT engines with --set).
+# Profiles hdx1026_* in configs/datasets.yaml pick the calib per mount (tripod = site calibration, excavator A / B =
+# the same extrinsics with the ground of each bag: scripts/field_calib.py reground).
+calib: calib/field_hdx_cal_20261026_104647_win.json   # tripod; reflector windows 0.5-22, 31-50, 56-80.5 s (docs/22 §4)
+
+topics:
+  radar: /radar_mid/driver/locations   # excavator B bags also have /radar_{left,right}/driver/locations (no calib yet)
+  image: /oak/rgb/image_raw/compressed  # 1280x720 30 Hz on 10-26 (intrinsics from camera_info)
+  imu: /ouster/imu                      # tripod / excavator A have no Bosch IMU; excavator B profiles use /bosch_imu/imu
+
+detector:
+  weights: models/yolo11s-seg.pt      # instance masks gate the in-box radar points (docs/14)
+  imgsz: 960
+  conf: 0.1                           # low threshold kept for ByteTrack-style second association
+  class_map:                          # COCO name -> project class
+    person: worker
+    truck: heavy_equipment
+    bus: heavy_equipment
+    car: heavy_equipment
+
+ego_velocity:
+  inlier_thr: 0.2                     # m/s, RANSAC
+  planar: true
+  standstill_p70: 0.05                # |v_r| 70th percentile below this -> ego = 0
+  ema_alpha: 0.4
+
+tracker:
+  high_thr: 0.5
+  low_thr: 0.1
+  new_thr: 0.6
+  min_hits: 3
+  max_lost_s: 1.5
+  relink_fragment_aware: true         # docs/32 §5: ratio-test rivals skip the candidate's own fragments (never alive together
+                                      # + close in appearance); false = the old relink
+  app_w_emb: 3.0                      # docs/32 §5: OSNet weight in the fused appearance distance (with reid.part_colour)
+  w3d: 0.6
+  w2d: 0.4
+  wdop: 0.2
+  dac: true                           # distance-adaptive cost (MOTDD SAAC analogue)
+  max_radar_only_s: 3.0
+
+ego_comp: true                        # 3D ego-motion compensation (MOTDD CMC analogue)
+
+recovery:                             # Radar-Gated Recovery (MOTDD PGR + radar), docs/05_motdd_radar_extension.html
+  enable: true
+  K: 4
+  crop_scale: 3.0
+  min_crop: 192
+  conf_thresh: 0.1
+  gate_iou: 0.3
+  gate_buffer_ratio: 0.2
+  use_radar_roi: true                 # false -> ROI from the KF prediction only (PGR)
+  use_radar_gate: true                # false -> buffered-IoU gate only (PGR)
+  radar_only: true                    # keep tracks alive on radar points when the camera misses
+
+reid:                                 # appearance re-identification (docs/09 §5)
+  enable: true
+  every: 1
+  weights: models/reid/osnet_x0_25_msmt17.pth
+  # same-helmet / same-vest crews (docs/32 §5, training-free; both false = the plain masked-OSNet cosine):
+  crowd_mean: true                    # subtract the mean embedding of the workers in the frame (>= 2, score >= 0.5)
+  part_colour: true                   # + pants / sleeve / shoe / whole-minus-crowd Lab histograms (fused distance,
+                                      # ~1.4 ms per person on the PC, ~3 ms estimated on Orin)
+  # part_max_pitch_deg: 20            # steeper camera (excB 26 deg): body bands off, crowd mean only
+
+gui:
+  bev_range: 20.0                     # BEV half-width [m] (mouse wheel zooms)
+  danger_m: 5.0                       # gallery card turns red inside this range
+  zones: [5.0, 10.0, 15.0]            # BEV danger / warning / caution discs
+
+world:                                # ego pose in a world frame fixed at the segment start (docs/24); GUI "월드" BEV
+  enable: true
+  lever_arm: null                     # RADAR position from the swing axis [m] (x fwd, y left); profiles set it per mount:
+                                      # excavator A (1.17, -0.89) tape = data; excavator B (0.96, 0.88) from Doppler / RTK
+                                      # (tape said ~(1.57, 1.06), docs/23 §3.5). null = Doppler dead reckoning (drifts)
+  still_speed: 0.05                   # [m/s] standstill -> gyro bias re-learnt, yaw held
+  axis_deadband: 0.15                 # [m/s] swing-axis speed below this = not driving
+
+work:                                 # soil-pile / workload monitor (docs/24), GUI tab "작업"
+  enable: false
+  depth: vggt_omega                   # dense depth: VGGT-Omega keyframes (local GPU, radar-scaled; height MAE 0.05-0.14 m on
+                                      # 155530) or "stereo" (OAK, topics.depth; 0.20-0.32 m). Falls back to stereo if the
+                                      # checkpoint models/vggt/vggt_omega_1b_512.pt is missing
+  vggt_views: 4                       # keyframes per inference (joint: more consistent depth)
+  vggt_period_s: 0.5
+  cell: 0.2
+  z_max: 2.5                          # bucket / boom above this are ignored
+  r_min: 2.5
+  r_max: 16.0
+  pile_thr: 0.2
+
+recon:                                # drive 3D reconstruction (docs/26 §6), GUI tab "재구성": VGGT-Omega chunks of the
+  enable: false                       # keyframes taken while driving, radar scale, joined + ground-refined, 0.1 m map.
+  chunk: 16                           # views per inference (RTX 3080: 1.5 s, 4.2 GB with the model)
+  overlap: 4
+  kf_dist: 1.0                        # keyframe every 1 m / 8 deg
+  kf_deg: 8.0
+  min_views: 2                        # points seen from >= 2 keyframes only
+  flush_s: 12.0                       # standing still this long (>= 10 keyframes waiting, >= 3 m travelled): short chunk
+
+ros:                                  # ROS 2 result output (docs/20); off for replays
+  namespace: /rcmot
+  publish: false
+  tf_parent: radar
+  markers: false
+  status_hz: 1.0
+
+alarm:                                # same zones as the demo (hdx_live_site); sound off for replays, "경보" button turns it on
+  enable: false
+  zones: [10.0, 20.0, 30.0]           # danger / warning / caution [m]
+  hysteresis: 1.0
+  confirmed_only: true
+  lost_grace_s: 0.5
+  radar_only_grace_s: 1.0             # docs/38 §10.4: a radar-only track counts for 1 s after the camera last saw it
+  sounds:
+    danger: assets/sounds/beep_800Hz_3_continuous.wav
+    warning: assets/sounds/beep_800Hz_2_fast.wav
+    caution: assets/sounds/beep_800Hz_1_slow.wav
+
+depth_map:                            # docs/41 §9.5 (r43, 11-04): metric depth map (DA-V2 small, radar-scaled, every 3rd frame)
+  enable: true                        # -> the range distribution's depth cue "dm" (docs/37-38). HOTA +0.008, IDsw 67 -> 50,
+                                      # false objects within 20 m -27 % (r43, in-sample params; LOSO r45: HOTA +0.007,
+                                      # IDsw 71 -> 55, false objects -8 %). Keys and defaults: configs/default.yaml

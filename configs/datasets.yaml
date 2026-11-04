@@ -1,0 +1,197 @@
+# Profiles for scripts/rcmot_app.py (--profile NAME, or the profile box in the GUI; docs/18 §1).
+#   datasets: bag replays  (bag + config + calib + start)  -> listed when the bag exists on this machine
+#   live:     ROS 2 sources (config [+ calib] [+ topics] [+ overrides]) -> listed when rclpy is importable (AGX / field PC)
+# Common keys: config, calib (default: the config's), topics (per-key override of the config's topics:), overrides
+# ({"a.b": v} applied to the config: model, imgsz, zones ...), note (tooltip). Paths relative to the project root.
+datasets:
+  boryeong_halt-short:
+    bag: data/bags/hdx_boryeong_pg/20251125_4R_bosch_halt-short_LC
+    config: configs/hdx_boryeong.yaml
+    calib: configs/calib/hdx_boryeong_pg_day1125.json
+    start: 85
+    note: "HDX 보령 PG, 낮, 자차 정지, 근거리(5-10 m) 작업자 3 + 장비 1 (GT: day_halt_short_085, val_day_haltshort_020)"
+  boryeong_halt-mid:
+    bag: data/bags/hdx_boryeong_pg/20251125_4R_bosch_halt-mid_LC
+    config: configs/hdx_boryeong.yaml
+    calib: configs/calib/hdx_boryeong_pg_day1125.json
+    start: 0
+    note: "HDX 보령 PG, 낮, 자차 정지, 원거리(15-20 m), 가림 (GT: val_day_haltmid_020)"
+  xpanner_construction_field:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/construction_field
+    config: configs/xpanner_arizona.yaml
+    calib: configs/calib/construction_field.json
+    start: 100
+    note: "애리조나 xpanner, 자차 거의 정지, 17-30 m 작업자 최대 9명 (GT 없음)"
+  xpanner05_static:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/xpanner05
+    config: configs/xpanner_arizona.yaml
+    calib: configs/calib/xpanner05.json
+    start: 846
+    note: "애리조나 Xpanner 현장, 파일 드라이버 장착, 자차 정지, 작업자 2명 15-30 m(한 명 말뚝 옆 웅크림, 한 명 횡단) (GT: xpanner05_static_a 846-906 s, 시험)"
+  xpanner03_mixed:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/xpanner03
+    config: configs/xpanner_arizona.yaml
+    calib: configs/calib/xpanner03.json
+    start: 250
+    note: "애리조나 Xpanner 현장, 파일 드라이버 장착, 정지 -> 주행(264-285 s, 최대 0.95 m/s) -> 정지, 작업자 1-2명 8-25 m (GT: xpanner03_mixed_a 250-310 s, 시험)"
+  agmoA_orchard:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/agmo/agmoA_20260903_150024
+    config: configs/agmo.yaml
+    calib: configs/calib/agmo_draft_from_tf.json
+    start: 340
+    note: agmo 과수원, 자차 이동(0.3 m/s) + 사람/장비, RTK FIXED. 보정값은 tf 초안(미검증). 후보 구간 340-410, 440-530, 550-600, 840-880, 930-980, 1000-1034 s
+  boryeong_conti_front:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/conti/20251126_4R_conti_drivemid-front_LC
+    config: configs/hdx_boryeong_conti.yaml
+    calib: configs/calib/hdx_boryeong_pg_conti1126.json
+    start: 10
+    note: "보령 2025-11-26 낮, Continental ARS548, 자차 주행(0.8 m/s) 정면, 작업자 + 굴착기 (GT 없음; 레이더 보정 LiDAR ICP fitness 0.57)"
+  boryeong_conti_side:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/conti/20251126_4R_conti_drivemid-side_LC
+    config: configs/hdx_boryeong_conti.yaml
+    calib: configs/calib/hdx_boryeong_pg_conti1126.json
+    start: 10
+    note: "보령 2025-11-26 낮, Continental ARS548, 자차 주행 측면 통과 (GT 없음)"
+  boryeong_conti_halt_short:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/conti/20251125_4R_conti_halt-short_LC
+    config: configs/hdx_boryeong_conti.yaml
+    calib: configs/calib/hdx_boryeong_pg_conti1125.json
+    start: 0
+    note: "보령 검증 현장 11-25 낮, Continental ARS548, 자차 정지, Bosch halt-short/mid와 같은 장면(37분 먼저 녹화)"
+  boryeong_conti_halt_mid:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/conti/20251125_4R_conti_halt-mid_LC
+    config: configs/hdx_boryeong_conti.yaml
+    calib: configs/calib/hdx_boryeong_pg_conti1125.json
+    start: 0
+    note: "보령 검증 현장 11-25 낮, Continental ARS548, 자차 정지, Bosch halt-short/mid와 같은 장면(37분 먼저 녹화)"
+
+  hdx_20261024_record:
+    bag: data/bags/hdx_agx/hdx_20261024_111633     # AGX: symlink -> /home/agx/sensor_driver/hdx/ros2_bag/hdx_20261024_111633
+    config: configs/hdx_agx_live.yaml
+    calib: configs/calib/field_hdx_20261024_111633.json
+    start: 0
+    note: "HDX GUI 기록 10-24 11:23, 49 s, 실내 로비, 정지 리그, LiDAR 포함, IMU 없음 (현장 보정 bag; OAK 2016x1512)"
+
+  # 2026-10-26 Boryeong site (docs/22), replay config hdx_20261026.yaml. Left out: indoor 032153 (the excavation runs
+  # 155530 / 162138 are the work-monitor profiles below). Excavator calibs = the tripod extrinsics + the ground of each bag (field_calib.py reground).
+  hdx1026_tripod_cal:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_cal_20261026_104647
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_cal_20261026_104647_win.json
+    start: 0
+    note: "10-26 삼각대(1.72 m) 보정 bag 1.4분: 리플렉터를 왼쪽·정면·오른쪽으로 옮김, 작업자 2명이 약 9 m·20 m에 섬"
+  hdx1026_tripod_105223:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_105223
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_cal_20261026_104647_win.json
+    start: 0
+    note: "10-26 삼각대 1.0분: 굴착기가 8-25 s에 앞을 지나감, 작업자 6명 모두 원거리"
+  hdx1026_tripod_113917:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_113917
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_cal_20261026_104647_win.json
+    start: 0
+    note: "10-26 삼각대 2.1분: 가까운 작업자가 걸어 나감(16 s), 굴착기 81 s 통과, 원거리 작업자 최대 8명"
+  hdx1026_excA_135442:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_135442
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_20261026_135442.json
+    overrides: {world.lever_arm: [1.17, -0.89]}
+    start: 0
+    note: "10-26 굴착기 A(1.62 m) 정지 2.8분: 작업자 2-5명이 콘 주변, 배경 장비 많음 (IMU: Ouster)"
+  hdx1026_excA_140718:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_140718
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_20261026_140718.json
+    overrides: {world.lever_arm: [1.17, -0.89], recon.enable: true, depth_map.enable: false}   # VGGT-Omega needs the GPU memory
+    start: 38
+    note: "10-26 굴착기 A(안전관제) 직진 -> 180° 선회 -> 직진 복귀, 4.1분(선회 43 s부터, 최대 49 °/s), 진동 큼. 지면 기울기 -4.7~-0.5° 변동 (IMU: Ouster)"
+  hdx1026_excA_142258:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_142258
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_20261026_142258.json
+    overrides: {world.lever_arm: [1.17, -0.89], recon.enable: true, depth_map.enable: false}   # VGGT-Omega needs the GPU memory
+    start: 37
+    note: "10-26 굴착기 A(안전관제) 직진 -> 180° 선회 -> 직진 복귀, 1.5분(선회 42 s부터, 최대 35 °/s), 진동 최대 (IMU: Ouster)"
+  hdx1026_excA_142537:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_142537
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_20261026_142537.json
+    overrides: {world.lever_arm: [1.17, -0.89]}
+    start: 17
+    note: "10-26 굴착기 A(안전관제) 제자리 좌우 선회 1.7분(22 s부터, 최대 67 °/s): 선회 중 사람 3D 위치·속도 추정 실험. 레이더 레버암 (1.17, -0.89) m (IMU: Ouster)"
+  hdx1026_excA_142951:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_142951
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_20261026_142951.json
+    overrides: {world.lever_arm: [1.17, -0.89]}
+    start: 16
+    note: "10-26 굴착기 A(안전관제) 제자리 좌우 선회 1.1분(21 s부터, 최대 67 °/s): 선회 중 3D 위치·속도 실험, 작업자 한 명이 정면에서 다가옴 (IMU: Ouster)"
+  hdx1026_excB_151845:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_151845
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_20261026_151845.json
+    overrides: {world.lever_arm: [0.96, 0.88]}
+    start: 55
+    note: "10-26 굴착기 B(캐빈 위 3.24 m, 26° 하향) 정지 8.6분: 붐·버킷이 화면 중앙, 사람은 22 % 시간만(55-125 s 등). IMU: Ouster (Bosch IMU는 88-220 s에 손으로 설치 중이라 무효)"
+  hdx1026_excB_154405:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_154405
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_20261026_154405.json
+    overrides: {world.lever_arm: [0.96, 0.88]}
+    topics: {imu: /bosch_imu/imu}
+    start: 0
+    note: "10-26 굴착기 B(캐빈 위, 26° 하향) 정지 1.2분: 작업자 2명이 버킷 주변 콘 사이를 오감 (근접 경보에 가장 가까움)"
+
+  hdx1026_work_155530:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_155530
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_20261026_155530.json
+    topics: {imu: /bosch_imu/imu, depth: /oak/stereo/image_raw/compressedDepth}
+    overrides: {world.lever_arm: [0.96, 0.88], work.enable: true, depth_map.enable: false}   # VGGT-Omega needs the GPU memory
+    start: 60
+    note: "10-26 굴착기 B 흙더미 작업 14.7분 (작업 모니터: 높이 맵·부피·선회 사이클, 탭 '작업'). 레버암은 데이터 값(줄자와 0.6 m 차이)"
+  hdx1026_work_162138:
+    bag: /media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_162138
+    config: configs/hdx_20261026.yaml
+    calib: configs/calib/field_hdx_20261026_162138.json
+    topics: {imu: /bosch_imu/imu, depth: /oak/stereo/image_raw/compressedDepth}
+    overrides: {world.lever_arm: [0.96, 0.88], work.enable: true, depth_map.enable: false}   # VGGT-Omega needs the GPU memory
+    start: 150
+    note: "10-26 굴착기 B 굴착·흙 옮기기 19.2분 (작업 모니터). 990 s, 1095 s 부근은 기계가 이동함"
+
+live:
+  hdx_live_mid:
+    config: configs/hdx_agx_live.yaml
+    note: "HDX AGX 리그 실시간: 중앙 Bosch 레이더 + OAK-D + Bosch IMU, TensorRT s-seg + OSNet 엔진 (시연 기본)"
+  hdx_live_fast:
+    config: configs/hdx_agx_live.yaml
+    overrides: {detector.weights: models/yolo11n-seg.engine, detector.imgsz: 640, reid.every: 2}
+    note: "HDX 실시간 저부하: n-seg 엔진 640 px, ReID 2프레임마다 (GUI 모드에서 15 Hz 유지용; 원거리 검출 약함)"
+  hdx_live_accurate:
+    config: configs/hdx_agx_live.yaml
+    overrides: {detector.weights: models/yolo11s-seg.engine, detector.imgsz: 1280, reid.weights: models/reid/osnet_ain_x1_0_msmt17.pth}
+    note: "HDX 실시간 고정밀: s-seg 1280 px + OSNet-AIN x1.0 (느림, 정지 시연·원거리용)"
+  hdx_live_left:
+    config: configs/hdx_agx_live.yaml
+    topics: {radar: /radar_left/driver/locations}
+    note: "HDX 실시간, 왼쪽 Bosch 레이더 (보정은 중앙 레이더 것: 투영 확인 전에는 참고용)"
+  hdx_live_right:
+    config: configs/hdx_agx_live.yaml
+    topics: {radar: /radar_right/driver/locations}
+    note: "HDX 실시간, 오른쪽 Bosch 레이더 (보정은 중앙 레이더 것: 투영 확인 전에는 참고용)"
+  conti_live:
+    config: configs/hdx_boryeong_conti.yaml
+    calib: configs/calib/hdx_boryeong_pg_conti1126.json
+    topics: {image: /oak/rgb/image_raw/compressed, imu: /bosch_imu/imu}
+    overrides: {depth_map.enable: false}   # live: depth stage only after the Orin timing (as hdx_agx_live)
+    note: "Continental ARS548 리그 실시간 (/radar/radar_detection_image), 보령 11-26 보정. 주의: 실시간 경로는 센서 시계 헤더를 변환하지 않아 영상과 짝이 안 맺어질 수 있음 (docs/21 §5.6, 미해결)"
+  hdx_live_site:
+    config: configs/hdx_agx_live.yaml
+    calib: configs/calib/field_hdx_20261024_111633.json
+    note: "HDX AGX 리그 실시간, 10-24 현장 보정(hdx_20261024_111633 bag)"
+  hdx_live_site_indoor:
+    config: configs/hdx_agx_live.yaml
+    calib: configs/calib/field_hdx_20261024_111633.json
+    overrides: {alarm.zones: [3.0, 5.0, 10.0], alarm.hysteresis: 0.3}
+    note: "실내 시험용: 경보 구역 3/5/10 m, 히스테리시스 0.3 m (시연은 hdx_live_site: 10/20/30 m, 1.0 m)"

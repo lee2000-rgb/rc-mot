@@ -1,0 +1,132 @@
+{
+ "features": [
+  "logn",
+  "u_mean",
+  "u_std",
+  "u_dev",
+  "v_mean",
+  "v_std",
+  "spread_rel",
+  "logrh",
+  "rv_abs",
+  "r",
+  "abs_logrh",
+  "abs_logdm"
+ ],
+ "mean": [
+  0.9557260966353665,
+  0.5155496696176808,
+  0.0578350429205066,
+  0.29327897051524826,
+  0.3613251354287853,
+  0.05178198537261009,
+  0.07538361652530234,
+  0.9063964733024513,
+  0.17109155959555847,
+  42.346381722828184,
+  0.9884024532044198,
+  0.886979841702003
+ ],
+ "std": [
+  0.4068867353126565,
+  0.3437236822727219,
+  0.11365627826796018,
+  0.17993111767081604,
+  0.30401355057304325,
+  0.09907346804348055,
+  0.14382217168846334,
+  0.8478223994728159,
+  0.7099319936385622,
+  33.902747050725694,
+  0.7506117359647583,
+  0.718729405411657
+ ],
+ "coef": [
+  0.8138345495209466,
+  -0.19154984861220942,
+  -0.3194003744863168,
+  -0.8185342260361935,
+  -1.2441129597138074,
+  0.44977667359866946,
+  -0.23620364785448972,
+  -0.8293473041075123,
+  0.4375379950015634,
+  -4.10998971326645,
+  -2.5132968350342084,
+  -14.320434796371469
+ ],
+ "intercept": -20.989386653566,
+ "height_m": 1.7,
+ "link_m": 1.0,
+ "train": "box10 (trackB cands10_bb, GT v1)",
+ "n": 29626,
+ "n_boxes": 7293,
+ "dmap": {
+  "model": "DA-V2 S 518x924 N3+KF bottom third",
+  "rel_err_max": 0.1,
+  "r_max_m": 25.0
+ },
+ "loso": {
+  "shipped LR (11 features, exp candidates)": {
+   "acc": 80.24,
+   "acc_ach": 94.98,
+   "p90": 9.15,
+   "0-10": 93.45,
+   "10-20": 84.26,
+   "20-30": 63.55,
+   "30+": 0.48,
+   "ambA": 79.6
+  },
+  "LR F11 refit (LOSO)": {
+   "acc": 80.42,
+   "acc_ach": 95.2,
+   "p90": 9.17,
+   "0-10": 93.71,
+   "10-20": 84.48,
+   "20-30": 63.61,
+   "30+": 0.0,
+   "ambA": 80.15
+  },
+  "LR F11 + |ln r/r_dmap| (LOSO)": {
+   "acc": 83.41,
+   "acc_ach": 98.73,
+   "p90": 6.92,
+   "0-10": 95.09,
+   "10-20": 87.45,
+   "20-30": 69.35,
+   "30+": 0.0,
+   "ambA": 89.77
+  },
+  "LR F11 + |ln| + ln r/r_dmap (LOSO)": {
+   "acc": 83.45,
+   "acc_ach": 98.78,
+   "p90": 6.92,
+   "0-10": 95.22,
+   "10-20": 87.48,
+   "20-30": 69.29,
+   "30+": 0.0,
+   "ambA": 89.84
+  },
+  "LR F11 + |ln| trained 518x924, applied to the 392x700 map (LOSO)": {
+   "acc": 83.31,
+   "acc_ach": 98.62,
+   "p90": 6.99,
+   "0-10": 95.22,
+   "10-20": 87.26,
+   "20-30": 69.1,
+   "30+": 0.0,
+   "ambA": 89.01
+  },
+  "LR F11 refit on the same rows (392 check)": {
+   "acc": 80.42,
+   "acc_ach": 95.2,
+   "p90": 9.17,
+   "0-10": 93.71,
+   "10-20": 84.48,
+   "20-30": 63.61,
+   "30+": 0.0,
+   "ambA": 80.15
+  }
+ },
+ "note": "docs/33 wave 3 B-b: cluster-score LR = the 11 features of configs/fusion_cluster_lr.json + abs_logdm = |ln(r_cluster / r_dmap)| (r_cluster = cluster median range, r_dmap = depth-map bottom-third range, both horizontal from the level origin), fitted on the box10 candidates of the boxes where the online depth stage offers r_dmap (fit inlier rel. error <= 0.10, r_dmap <= 25 m). Used by fuse() only when fusion.cluster_dmap is on and the box has r_dmap; otherwise configs/fusion_cluster_lr.json."
+}

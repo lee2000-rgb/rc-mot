@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.venv/
+build/
+dist/
+# not in git: fetch with scripts/fetch_assets.sh
+/models/
+/data/
+/third_party/*
+!/third_party/depth_anything_v2/
+*.pt
+*.pth
+*.engine
+*.onnx
+# outputs
+*.npz
+*.npy
+*.pkl
+*.mp4
+*.db3
+*.mcap
+/runs/
+/out/

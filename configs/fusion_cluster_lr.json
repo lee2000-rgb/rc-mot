@@ -1,0 +1,60 @@
+{
+ "features": [
+  "logn",
+  "u_mean",
+  "u_std",
+  "u_dev",
+  "v_mean",
+  "v_std",
+  "spread_rel",
+  "logrh",
+  "rv_abs",
+  "r",
+  "abs_logrh"
+ ],
+ "mean": [
+  0.9513432903415309,
+  0.5109583837155373,
+  0.05484122711540344,
+  0.29786792654377736,
+  0.36661586115328226,
+  0.048152384326966884,
+  0.07589810268432098,
+  1.030118698504075,
+  0.18141504245449946,
+  46.856683162194344,
+  1.0938629214112952
+ ],
+ "std": [
+  0.40328112548037276,
+  0.34706239884509155,
+  0.10977371305520227,
+  0.17845753798892186,
+  0.3084299444275681,
+  0.09536043582727889,
+  0.1498490437226887,
+  0.9351416113174587,
+  0.6746488782367541,
+  36.20022152184279,
+  0.8597082500684877
+ ],
+ "coef": [
+  0.7898368132992165,
+  -0.6360338872039958,
+  -0.48333822969577406,
+  -1.1341737753023842,
+  -0.27299900088364626,
+  0.7528124702869178,
+  -0.236577656505047,
+  -2.533724178812399,
+  0.21630791061408788,
+  -0.5766361393590732,
+  -4.940865874233831
+ ],
+ "intercept": -8.211898371283105,
+ "height_m": 1.7,
+ "link_m": 1.0,
+ "train": "box10",
+ "n": 51479,
+ "note": "cluster-level candidate scorer (docs/30 \u00a73): logistic regression on the 10 layout features of the experiment plus |ln(r/r_h)| (LOSO selection acc 82.5 % vs 81.3 % without it), standardised with mean/std, fitted on exp candidates (box margin 10 %, 51479 range clusters of 13286 worker boxes, 19 segments). Features are computed per range cluster (single linkage link_m) of the in-box radar points; r_h = fx * height_m / box_h_px. p = sigmoid(coef . (x - mean) / std + intercept)."
+}

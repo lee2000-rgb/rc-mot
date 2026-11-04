@@ -1,0 +1,83 @@
+# RC-MOT configuration for the HDX Boryeong proving ground rig (deployment target)
+# data: data/bags/hdx_boryeong_pg/*  calib: scripts/calib_tune.py (docs/06_hdx_dataset_calibration.html)
+calib: calib/hdx_boryeong_pg_day1125.json     # radar extrinsic is per session: day1125 (halt bags, local)
+                                              # night1126 kept for reference (night bags deleted 2026-10-23); override with --calib
+
+topics:
+  radar: /off_highway_premium_radar_sample_driver/locations
+  image: /oak/rgb/image_raw           # raw sensor_msgs/Image (bgr8) in these bags
+  imu: /ouster/imu
+
+detector:
+  weights: models/yolo11s-seg.pt      # instance masks gate the in-box radar points (docs/14); plain: models/yolo11s.pt
+                                      # Orin: TensorRT engine of the same model (scripts/export_trt.sh)
+  imgsz: 960
+  conf: 0.1                           # low threshold kept for ByteTrack-style second association
+  class_map:                          # COCO name -> project class
+    person: worker
+    truck: heavy_equipment
+    bus: heavy_equipment
+    car: heavy_equipment
+
+ego_velocity:
+  inlier_thr: 0.2                     # m/s, RANSAC
+  planar: true
+  standstill_p70: 0.05                # |v_r| 70th percentile below this -> ego = 0
+  ema_alpha: 0.4
+
+tracker:
+  high_thr: 0.5
+  low_thr: 0.1
+  new_thr: 0.6
+  min_hits: 3
+  max_lost_s: 1.5
+  relink_fragment_aware: true         # docs/32 §5: ratio-test rivals skip the candidate's own fragments (never alive together
+                                      # + close in appearance); false = the old relink
+  app_w_emb: 3.0                      # docs/32 §5: OSNet weight in the fused appearance distance (with reid.part_colour)
+  w3d: 0.6
+  w2d: 0.4
+  wdop: 0.2
+  dac: true                           # distance-adaptive cost (MOTDD SAAC analogue)
+  max_radar_only_s: 3.0
+
+ego_comp: true                        # 3D ego-motion compensation (MOTDD CMC analogue)
+
+recovery:                             # Radar-Gated Recovery (MOTDD PGR + radar), docs/05_motdd_radar_extension.html
+  enable: true
+  K: 4
+  crop_scale: 3.0
+  min_crop: 192
+  conf_thresh: 0.1
+  gate_iou: 0.3
+  gate_buffer_ratio: 0.2
+  use_radar_roi: true                 # false -> ROI from the KF prediction only (PGR)
+  use_radar_gate: true                # false -> buffered-IoU gate only (PGR)
+  radar_only: true                    # keep tracks alive on radar points when the camera misses
+
+reid:                                 # appearance re-identification (docs/09 §5)
+  enable: true
+  weights: models/reid/osnet_x0_25_msmt17.pth   # or models/reid/osnet_ain_x1_0_msmt17.pth (better cross-domain, heavier)
+  # same-helmet / same-vest crews (docs/32 §5, training-free; both false = the plain masked-OSNet cosine):
+  crowd_mean: true                    # subtract the mean embedding of the workers in the frame (>= 2, score >= 0.5)
+  part_colour: true                   # + pants / sleeve / shoe / whole-minus-crowd Lab histograms (fused distance,
+                                      # ~1.4 ms per person on the PC, ~3 ms estimated on Orin)
+  # part_max_pitch_deg: 20            # steeper camera (excB 26 deg): body bands off, crowd mean only
+
+gui:
+  bev_range: 20.0                     # BEV half-width [m] (mouse wheel zooms)
+  danger_m: 5.0                       # gallery card turns red inside this range
+  zones: [5.0, 10.0, 15.0]            # BEV danger / warning / caution discs
+
+alarm:                                # PoC demo (docs/18): zone beeps over the speaker, toggle "경보" in the GUI
+  enable: false
+  zones: [10.0, 20.0, 30.0]           # danger / warning / caution [m]
+  hysteresis: 1.0                     # leave a zone only this far beyond its boundary
+  sounds:
+    danger: assets/sounds/beep_800Hz_3_continuous.wav
+    warning: assets/sounds/beep_800Hz_2_fast.wav
+    caution: assets/sounds/beep_800Hz_1_slow.wav
+
+depth_map:                            # docs/41 §9.5 (r43, 11-04): metric depth map (DA-V2 small, radar-scaled, every 3rd frame)
+  enable: true                        # -> the range distribution's depth cue "dm" (docs/37-38). HOTA +0.008, IDsw 67 -> 50,
+                                      # false objects within 20 m -27 % (r43, in-sample params; LOSO r45: HOTA +0.007,
+                                      # IDsw 71 -> 55, false objects -8 %). Keys and defaults: configs/default.yaml

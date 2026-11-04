@@ -1,0 +1,132 @@
+{
+ "UNVERIFIED": "DRAFT derived from /tf_static of agmoD_20260903_160255 (all sensor rotations are 0 = nominal/placeholder values) + camera_info + Ouster ground fit. Not calibrated. See scratchpad agmo_sensor_report.md.",
+ "bag_key": "agmoD_20260903_160255 (tf_static; hamyang3A tf_static differs: base_link->islab_frame)",
+ "frame": "level (ground below os_sensor, z up), axes = islab_frame (tf rotation 0, ground fit pitch/roll |<1.6| deg ignored)",
+ "image_size": {
+  "width": 640,
+  "height": 400
+ },
+ "K": [
+  [
+   364.5442810058594,
+   0.0,
+   321.2330017089844
+  ],
+  [
+   0.0,
+   364.3934326171875,
+   197.64251708984375
+  ],
+  [
+   0.0,
+   0.0,
+   1.0
+  ]
+ ],
+ "D": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0
+ ],
+ "distortion_model": "rational_polynomial",
+ "camera_time_offset_s": 0.0,
+ "T_base_level_radar": {
+  "note": "p_level = R @ p_radar + t  (radar = bosch_mid; tf rotation identity)",
+  "R": [
+   [
+    1.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    1.0
+   ]
+  ],
+  "t": [
+   0.107,
+   0.0,
+   0.589
+  ]
+ },
+ "T_cam_level": {
+  "note": "p_cam_opt = R @ p_level + t  (oak_rgb_camera_optical_frame; tf rotation identity + optical convention)",
+  "R": [
+   [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    -1.0
+   ],
+   [
+    1.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "t": [
+   0.0,
+   0.699,
+   -0.107
+  ]
+ },
+ "extrinsics": {
+  "cam_rpy_deg": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "cam_t": [
+   0.0,
+   0.0,
+   0.11
+  ],
+  "radar_rpy_deg": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "radar_t": [
+   0.107,
+   0.0,
+   0.589
+  ],
+  "ground_normal": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "sensor_height": 0.734
+ },
+ "report": {
+  "source": "scripts/agmo_probe.py (tf_static, camera_info), Ouster RANSAC ground plane (os_lidar 0.767-0.798 m above ground)",
+  "not_from_bag": [
+   "camera/radar rotations (tf gives exact zeros = nominal)",
+   "camera distortion (camera_info D is all zeros although topic is image_raw)",
+   "camera_time_offset_s (radar header stamps lag IMU/GNSS by ~0.09-0.13 s; camera offset not measured)",
+   "ground_normal / level-frame tilt (set to tf nominal)",
+   "radar_left/right (same yaw 0, y=+-0.15 m)"
+  ],
+  "doppler_checks": {
+   "radar_mid_mount_yaw_deg_vs_gnss_track": -1.7,
+   "note": "yaw from Doppler ego velocity vs GNSS course while driving straight (agmoD RTK FIXED). Includes yaw_deg/track ambiguity; hamyang3A gives +0.4 deg.",
+   "lever_arm_x_radar_from_gnss_m": 1.94,
+   "tf_base_link_to_bosch_mid_x_m": 2.09
+  }
+ }
+}

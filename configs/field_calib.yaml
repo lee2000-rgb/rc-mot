@@ -1,0 +1,37 @@
+# Field calibration (scripts/field_calib.py): camera <- os_sensor (LiDAR hub), radar -> os_sensor.
+# On site: machine stationary, sensors on, 2-4 people standing / walking slowly 5-15 m in front of the camera,
+# 3+ corner reflectors on tripods 5-25 m away, spread left / centre / right, nothing else within ~1 m of them.
+
+topics:
+  image: /oak/rgb/image_raw            # sensor_msgs/Image or .../compressed
+  camera_info: /oak/rgb/camera_info
+  lidar: /ouster/points
+  radar: /off_highway_premium_radar_sample_driver/locations
+  imu: /ouster/imu
+
+record:
+  duration_s: 40                       # stationary capture length
+  out_dir: data/calib_captures         # <out_dir>/<name>_<YYYYmmdd_HHMMSS>/
+
+# Rough initial extrinsics (tape measure / drawings). Conventions (src/rcmot/utils/rig_extrinsics.py):
+#   camera : p_cam = R_OPT (R(cam_rpy) p_os_sensor - cam_t); cam_rpy = 0 means the camera looks along os_sensor +x
+#            (cam_t ~ camera position in os_sensor [m])
+#   radar  : p_os_sensor = R(radar_rpy) p_radar + radar_t
+# rpy in degrees, R = Rz(yaw) Ry(pitch) Rx(roll).
+initial:
+  cam_rpy_deg: [0.0, 0.0, 0.0]
+  cam_t: [0.08, 0.0, -0.05]
+  radar_points_frame: os_sensor        # 'os_sensor': driver already outputs in os_sensor (HDX rig) -> radar init = identity
+                                       # 'radar'    : raw radar frame -> use radar_rpy_deg / radar_t below
+  radar_rpy_deg: [0.0, 0.0, 0.0]
+  radar_t: [0.14, 0.0, -0.17]
+  init_from_tf_bag: null               # or a bag whose /tf_static has os_sensor->camera/radar frames (overrides above)
+
+solve:
+  camera_search_deg: 8.0               # +- range of the coarse yaw / pitch search around the initial rotation
+  camera_fps: 2.0                      # frames per second sampled for the person-mask score
+  max_camera_frames: 80
+  reflector_weight: 1.0                # weight of the reflector anchors vs. the ICP terms
+  min_reflectors: 2                    # fewer -> radar from ICP only (with a warning)
+  max_reflector_residual_m: 0.3        # a reflector match further off than this after a solve is rejected
+  min_person_masks: 20                 # fewer -> camera result flagged unreliable

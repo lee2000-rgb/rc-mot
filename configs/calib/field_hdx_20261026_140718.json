@@ -1,0 +1,403 @@
+{
+ "bag_key": "hdx_20261026_140718",
+ "frame": "level (ground below os_sensor, z up)",
+ "image_size": {
+  "width": 1280,
+  "height": 720
+ },
+ "K": [
+  [
+   729.0885620117188,
+   0.0,
+   642.4660034179688
+  ],
+  [
+   0.0,
+   728.786865234375,
+   355.2850341796875
+  ],
+  [
+   0.0,
+   0.0,
+   1.0
+  ]
+ ],
+ "D": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0
+ ],
+ "distortion_model": "rational_polynomial",
+ "camera_time_offset_s": 0.0,
+ "T_base_level_radar": {
+  "note": "p_level = R @ p_radar + t",
+  "R": [
+   [
+    0.9988709080654041,
+    -0.011341021251874002,
+    -0.04613339633670003
+   ],
+   [
+    0.011509517893453083,
+    0.999928022337239,
+    0.003388383478568525
+   ],
+   [
+    0.04609164803361656,
+    -0.003915530832734568,
+    0.9989295413590704
+   ]
+  ],
+  "t": [
+   0.14698835160969823,
+   -0.04982478693178967,
+   1.4812654225499087
+  ]
+ },
+ "T_cam_level": {
+  "note": "p_cam_opt = R @ p_level + t",
+  "R": [
+   [
+    0.0015154746281904987,
+    -0.9999943278182912,
+    0.003007934157354878
+   ],
+   [
+    0.036670576062713886,
+    -0.002950341352719176,
+    -0.9993230530399723
+   ],
+   [
+    0.9993262591305605,
+    0.0016247514105568633,
+    0.036665896893078545
+   ]
+  ],
+  "t": [
+   -0.0049204313952434025,
+   1.5997101588461549,
+   -0.16697871654415208
+  ]
+ },
+ "extrinsics": {
+  "cam_rpy_deg": [
+   -0.006740697511338163,
+   -0.21781315040111884,
+   -0.09373447373855079
+  ],
+  "cam_t": [
+   0.107,
+   0.0,
+   -0.035
+  ],
+  "radar_rpy_deg": [
+   -0.02209091451496648,
+   -0.3246046387481675,
+   0.658479076264658
+  ],
+  "radar_t": [
+   0.14061329239985385,
+   -0.04933252339999317,
+   -0.16052613504200733
+  ],
+  "ground_normal": [
+   0.040469477776448444,
+   -0.003065496114772494,
+   0.9991760726228746
+  ],
+  "sensor_height": 1.635817520543847
+ },
+ "report": {
+  "bag": "/media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_20261026_140718",
+  "notes": [
+   "reground of field_hdx_cal_20261026_104647_win.json: extrinsics kept, ground from this bag",
+   "radar_time_offset_s -0.11: Bosch radar scan = state 110 ms before its header (Doppler vs IMU, docs/23 \u00a73.4)"
+  ],
+  "warnings": [
+   "rig pose to the ground changes during the bag (p10-p90 above): one ground per bag is approximate"
+  ],
+  "ground": {
+   "height": 1.635817520543847,
+   "normal": [
+    0.040469477776448444,
+    -0.003065496114772494,
+    0.9991760726228746
+   ],
+   "tilt_deg": 2.326011836963063,
+   "roll_deg": -0.1757842718810701,
+   "pitch_deg": -2.3193745743012024,
+   "height_p10_p90": [
+    1.583,
+    1.783
+   ],
+   "roll_p10_p90": [
+    -0.81,
+    1.29
+   ],
+   "pitch_p10_p90": [
+    -4.71,
+    -0.51
+   ],
+   "n_scans": 120,
+   "step_s": 2.0
+  },
+  "base_report": {
+   "bag": "/media/islab/SAMSUNG/ros2_bag_files/hdx_20261026/hdx_cal_20261026_104647",
+   "notes": [
+    "windows given by hand: [(0.5, 22.0), (31.0, 50.0), (56.0, 80.5)]"
+   ],
+   "warnings": [],
+   "ground": {
+    "height": 1.7230403002785084,
+    "normal": [
+     -0.02091860334758613,
+     -0.003172318714988853,
+     0.9997761491593792
+    ]
+   },
+   "initial": {
+    "cam_rpy_deg": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "cam_t": [
+     0.107,
+     0.0,
+     -0.035
+    ],
+    "radar_rpy_deg": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "radar_t": [
+     0.107,
+     0.0,
+     -0.145
+    ],
+    "ground_normal": [
+     0.0,
+     0.0,
+     1.0
+    ],
+    "sensor_height": 1.7
+   },
+   "camera": {
+    "n_frames": 80,
+    "n_masks": 133,
+    "score_initial": 0.8755196428559794,
+    "score_final": 0.9026496525631197,
+    "sharpness_1deg": {
+     "roll": 0.057408418818796436,
+     "pitch": 0.17577835490908,
+     "yaw": 0.5613301969431306
+    }
+   },
+   "radar": {
+    "windows": [
+     {
+      "window": "hdx_cal_20261026_104647:0.5-22",
+      "n_radar": 97612,
+      "fitness": 0.2914498217432283,
+      "rmse": 0.13584436669041192
+     },
+     {
+      "window": "hdx_cal_20261026_104647:31-50",
+      "n_radar": 87614,
+      "fitness": 0.2798068801789668,
+      "rmse": 0.14126714437805019
+     },
+     {
+      "window": "hdx_cal_20261026_104647:56-80.5",
+      "n_radar": 113185,
+      "fitness": 0.2857622476476565,
+      "rmse": 0.13505471585404114
+     }
+    ],
+    "fitness_initial": 0.25501720407388956,
+    "reflectors": [
+     {
+      "radar_xy": [
+       8.725,
+       5.106
+      ],
+      "rcs": 11.8,
+      "persistence": 0.99,
+      "note": "",
+      "lidar_xy": [
+       8.723,
+       5.135
+      ],
+      "residual_xy_cm": 2.9
+     },
+     {
+      "radar_xy": [
+       27.518,
+       -7.255
+      ],
+      "rcs": 4.2,
+      "persistence": 0.54,
+      "note": "LiDAR object not isolated"
+     },
+     {
+      "radar_xy": [
+       9.009,
+       -2.803
+      ],
+      "rcs": -8.1,
+      "persistence": 0.71,
+      "note": "LiDAR object near the cluster is too large (not an isolated reflector)"
+     },
+     {
+      "radar_xy": [
+       20.244,
+       1.378
+      ],
+      "rcs": -4.0,
+      "persistence": 1.19,
+      "note": "",
+      "lidar_xy": [
+       20.24,
+       1.399
+      ],
+      "residual_xy_cm": 2.0
+     },
+     {
+      "radar_xy": [
+       20.164,
+       0.46
+      ],
+      "rcs": 11.8,
+      "persistence": 1.01,
+      "note": "LiDAR object near the cluster is too large (not an isolated reflector)"
+     },
+     {
+      "radar_xy": [
+       27.523,
+       -7.255
+      ],
+      "rcs": 4.3,
+      "persistence": 0.65,
+      "note": "LiDAR object not isolated"
+     },
+     {
+      "radar_xy": [
+       30.027,
+       4.29
+      ],
+      "rcs": 0.1,
+      "persistence": 0.52,
+      "note": "",
+      "lidar_xy": [
+       30.04,
+       4.307
+      ],
+      "residual_xy_cm": 2.1
+     },
+     {
+      "radar_xy": [
+       9.008,
+       -2.791
+      ],
+      "rcs": -8.9,
+      "persistence": 0.51,
+      "note": "",
+      "lidar_xy": [
+       9.026,
+       -2.764
+      ],
+      "residual_xy_cm": 3.3
+     },
+     {
+      "radar_xy": [
+       22.443,
+       -7.274
+      ],
+      "rcs": 11.0,
+      "persistence": 0.75,
+      "note": "rejected: radar-LiDAR mismatch > max_reflector_residual_m"
+     },
+     {
+      "radar_xy": [
+       7.83,
+       -5.09
+      ],
+      "rcs": 11.2,
+      "persistence": 1.0,
+      "note": "",
+      "lidar_xy": [
+       7.846,
+       -5.107
+      ],
+      "residual_xy_cm": 2.4
+     },
+     {
+      "radar_xy": [
+       14.207,
+       -3.552
+      ],
+      "rcs": -13.9,
+      "persistence": 0.81,
+      "note": "no LiDAR object near the radar cluster"
+     },
+     {
+      "radar_xy": [
+       19.78,
+       3.014
+      ],
+      "rcs": -9.7,
+      "persistence": 1.14,
+      "note": "",
+      "lidar_xy": [
+       19.739,
+       2.924
+      ],
+      "residual_xy_cm": 9.9
+     },
+     {
+      "radar_xy": [
+       22.441,
+       -7.274
+      ],
+      "rcs": 11.0,
+      "persistence": 0.74,
+      "note": "LiDAR object not isolated"
+     },
+     {
+      "radar_xy": [
+       27.535,
+       -7.234
+      ],
+      "rcs": 4.4,
+      "persistence": 0.65,
+      "note": "LiDAR object not isolated"
+     }
+    ],
+    "n_anchors": 6,
+    "icp_only_minus_final_rpy_deg": [
+     0.032,
+     -0.024,
+     0.127
+    ],
+    "icp_only_minus_final_t_m": [
+     -0.036,
+     0.039,
+     -0.005
+    ]
+   }
+  }
+ },
+ "radar_time_offset_s": -0.11
+}

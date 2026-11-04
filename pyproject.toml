@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rcmot"
+version = "0.1.0"
+description = "4D radar + camera worker tracking and alarm, work-volume monitor and drive reconstruction for construction machines"
+requires-python = ">=3.10"
+# dependencies: requirements.txt (pinned; torch from the CUDA index)
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

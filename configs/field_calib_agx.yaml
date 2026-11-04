@@ -1,0 +1,33 @@
+# Field calibration on the HDX AGX rig (scripts/field_calib.py --config configs/field_calib_agx.yaml; docs/19).
+# Topics of the AGX drivers (hdx_ws): mid Bosch radar, OAK-D RGB (compressed), Ouster, Bosch IMU.
+# Scene: machine stationary, 2-4 people standing / walking slowly 5-15 m in front, 3+ corner reflectors on
+# tripods 5-25 m away spread left / centre / right, nothing within ~1 m of each reflector.
+
+topics:
+  image: /oak/rgb/image_raw/compressed
+  camera_info: /oak/rgb/camera_info
+  lidar: /ouster/points                # needed by the automatic solve (camera <- LiDAR, radar -> LiDAR);
+                                       # without a LiDAR use calib_viewer.py (manual) on the capture, see docs/19
+  radar: /radar_mid/driver/locations
+  imu: /bosch_imu/imu
+
+record:
+  duration_s: 40
+  out_dir: data/calib_captures
+
+initial:
+  cam_rpy_deg: [0.0, 0.0, 0.0]
+  cam_t: [0.107, 0.0, -0.035]          # /tf_static of hdx_20261024_111633 (islab_frame->oak_parent_frame minus os_sensor)
+  radar_points_frame: radar            # AGX driver publishes raw radar frame points
+  radar_rpy_deg: [0.0, 0.0, 0.0]
+  radar_t: [0.107, 0.0, -0.145]        # /tf_static of hdx_20261024_111633 (islab_frame->bosch_mid minus os_sensor)
+  init_from_tf_bag: null
+
+solve:
+  camera_search_deg: 8.0
+  camera_fps: 2.0
+  max_camera_frames: 80
+  reflector_weight: 1.0
+  min_reflectors: 2
+  max_reflector_residual_m: 0.3
+  min_person_masks: 20

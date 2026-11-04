@@ -1,0 +1,93 @@
+# RC-MOT LIVE configuration for the HDX rig on the AGX Orin (PoC 2026-10-26): 3 Bosch radars (mid used), OAK-D Pro W, Bosch MM7.10 IMU
+# run:  source ~/rc_mot_orin/env_agx.sh && python3 scripts/rcmot_app.py --config configs/hdx_agx_live.yaml --live   (ROS_DOMAIN_ID 12, Fast DDS LAN profile)
+calib: calib/field_hdx_20261024_111633.json   # 2026-10-24 site calibration from the HDX GUI bag hdx_20261024_111633 (solver rotations, radar z from the tape 1.51 m; D-24/D-25). Boryeong start point was calib/hdx_boryeong_pg_day1125.json
+
+topics:
+  radar: /radar_mid/driver/locations   # AGX driver topics: /radar_{left,mid,right}/driver/locations (use_sensor_time false -> receive-time headers)
+  image: /oak/rgb/image_raw/compressed  # day yaml = 2016x1512 30 Hz, night yaml = 1280x720 15 Hz (intrinsics from camera_info)
+  imu: /bosch_imu/imu                   # vehicle IMU 100 Hz (or /ouster/imu)
+
+detector:
+  weights: models/yolo11s-seg.engine  # TensorRT FP16 (scripts/export_trt.sh on the AGX); .pt = 36 ms, engine = 19 ms; instance masks gate the in-box radar points (docs/14); plain: models/yolo11s.pt
+                                      # Orin: TensorRT engine of the same model (scripts/export_trt.sh)
+  imgsz: 960
+  conf: 0.1                           # low threshold kept for ByteTrack-style second association
+  class_map:                          # COCO name -> project class
+    person: worker
+    truck: heavy_equipment
+    bus: heavy_equipment
+    car: heavy_equipment
+
+ego_velocity:
+  inlier_thr: 0.2                     # m/s, RANSAC
+  planar: true
+  standstill_p70: 0.05                # |v_r| 70th percentile below this -> ego = 0
+  ema_alpha: 0.4
+
+tracker:
+  high_thr: 0.5
+  low_thr: 0.1
+  new_thr: 0.6
+  min_hits: 3
+  max_lost_s: 1.5
+  relink_fragment_aware: true         # docs/32 §5: ratio-test rivals skip the candidate's own fragments (never alive together
+                                      # + close in appearance); false = the old relink
+  app_w_emb: 3.0                      # docs/32 §5: OSNet weight in the fused appearance distance (with reid.part_colour)
+  w3d: 0.6
+  w2d: 0.4
+  wdop: 0.2
+  dac: true                           # distance-adaptive cost (MOTDD SAAC analogue)
+  max_radar_only_s: 3.0
+
+ego_comp: true                        # 3D ego-motion compensation (MOTDD CMC analogue)
+
+recovery:                             # Radar-Gated Recovery (MOTDD PGR + radar), docs/05_motdd_radar_extension.html
+  enable: true
+  K: 4
+  crop_scale: 3.0
+  min_crop: 192
+  conf_thresh: 0.1
+  gate_iou: 0.3
+  gate_buffer_ratio: 0.2
+  use_radar_roi: true                 # false -> ROI from the KF prediction only (PGR)
+  use_radar_gate: true                # false -> buffered-IoU gate only (PGR)
+  radar_only: true                    # keep tracks alive on radar points when the camera misses
+
+reid:                                 # appearance re-identification (docs/09 §5)
+  enable: true
+  every: 1
+  weights: models/reid/osnet_x0_25_msmt17.engine   # TensorRT (scripts/export_reid_trt.sh on the AGX): 10 ms vs 43 ms for the .pth
+  # same-helmet / same-vest crews (docs/32 §5, training-free; both false = the plain masked-OSNet cosine):
+  crowd_mean: true                    # subtract the mean embedding of the workers in the frame (>= 2, score >= 0.5)
+  part_colour: true                   # + pants / sleeve / shoe / whole-minus-crowd Lab histograms (fused distance,
+                                      # ~1.4 ms per person on the PC, ~3 ms estimated on Orin)
+  # part_max_pitch_deg: 20            # steeper camera (excB 26 deg): body bands off, crowd mean only
+
+gui:
+  bev_range: 20.0                     # BEV half-width [m] (mouse wheel zooms)
+  danger_m: 5.0                       # gallery card turns red inside this range
+  zones: [5.0, 10.0, 15.0]            # BEV danger / warning / caution discs
+
+ros:                                  # ROS 2 result output (docs/20): rcmot_app.py --publish / PUB button; HDX GUI records these topics
+  namespace: /rcmot                   # /rcmot/tracks (rcmot_msgs/TrackArray), alarm, detections (vision_msgs), status 1 Hz
+  publish: false                      # true = publisher created and ON at start even without --publish
+  tf_parent: radar                    # /tf_static parent of base_link_level (overridden by the radar cloud's frame_id when live)
+  markers: false                      # visualization_msgs/MarkerArray for RViz (costly with many tracks; not recorded)
+  status_hz: 1.0
+
+alarm:                                # PoC demo (docs/18): zone beeps over the speaker, toggle "경보" in the GUI
+  enable: true
+  zones: [10.0, 20.0, 30.0]           # danger / warning / caution [m]
+  hysteresis: 1.0                     # leave a zone only this far beyond its boundary
+  confirmed_only: true                # camera-confirmed tracks; LOST for lost_grace_s; RADAR_ONLY for radar_only_grace_s
+  lost_grace_s: 0.5
+  radar_only_grace_s: 1.0             # docs/38 §10.4: a radar-only track counts for 1 s after the camera last saw it
+  sounds:
+    danger: assets/sounds/beep_800Hz_3_continuous.wav
+    warning: assets/sounds/beep_800Hz_2_fast.wav
+    caution: assets/sounds/beep_800Hz_1_slow.wav
+
+# depth_map:                          # docs/41 §9.5: on in the replay / evaluation configs since 11-04; live on the AGX only
+#   enable: true                      # after the Orin timing (DA-V2 small 518x924 every 3rd frame, TensorRT not built yet)
+#   every: 6                          # r46 (docs/41 §9.5): every 6th frame = same tracking / alarm as every 3rd, half the GPU
+                                      # cost; keep input 518x924 (392x700 lost the alarm range gain) and max_range 25 (40 m was worse)
