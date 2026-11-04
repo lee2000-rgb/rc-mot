@@ -150,9 +150,11 @@ class ScanStatsParams:
     ground_q: float = 25.0            # percentile of z per range bin taken as the ground level
     # below-ground rule (research/ground, user question 11-04): the per-bin MAD of z mixes trees / objects / elevation
     # noise and grows far away, so the drop line g - max(3 sigma, 1 m) fell to -9 m beyond ~35 m (no check at all)
-    ground_sigma: str = "mad"         # "mad" (per-bin MAD of all z, until 11-04) | "elev": s(r) = hypot(ground_s0, r * ground_el_sigma)
-    ground_s0: float = 0.3            # [m] height noise at zero range (elev model)
-    ground_el_sigma: float = 0.02     # [rad] elevation noise (elev model)
+    ground_sigma: str = "elev"        # "elev" (default since 11-04): s(r) = hypot(ground_s0, r * ground_el_sigma), fitted on
+                                      # 373k ground-clutter returns vs LiDAR (<= 45 m, docs/38 §13.3) | "mad": per-bin MAD of
+                                      # all z (until 11-04; the drop line fell to -8 m beyond 35 m)
+    ground_s0: float = 0.03           # [m] height noise at zero range (elev model)
+    ground_el_sigma: float = 0.0075   # [rad] elevation noise, 0.43 deg (elev model)
     ground_mode: str = "drop"         # "drop": keep = False below the line | "soft": no drop, weight
                                       # w_g = sigmoid((z - line) / (ground_soft_tau * s)) into alpha and the lik cluster score
     ground_soft_tau: float = 0.5

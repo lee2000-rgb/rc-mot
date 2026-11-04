@@ -228,6 +228,16 @@ class FusionParams:
                                       # lik_wedge_fallback it never makes a box radar-backed nor gives it a velocity
     lik_wedge_beta: float = 0.5       # "prod": power of the wedge likelihood
     lik_wedge_mirror: bool = True     # below-ground (mirror) returns are wedge cluster members (else only counted)
+    lik_wedge_exclusive: bool = True  # a return inside several person wedges belongs to the box whose azimuth centre is
+                                      # nearest (relative to its wedge half-width): r52/r53 without it -> ID swaps between
+                                      # side-by-side people (each box's range pulled to its neighbour's)
+    lik_wedge_window: float = 0.0     # > 0: the wedge term only acts where the camera x in-box radar posterior already has
+                                      # density >= this fraction of its peak (+- 1 m): it sharpens existing modes and never
+                                      # creates new ones (docs/41 §9 "expected window"; r52-r55: new modes from background
+                                      # in the azimuth band -> hypothesis tracks -> ID switches); 0 = off
+    lik_wedge_claim_m: float = 0.0    # > 0: also leave out of a box's wedge every return within this range [m] of a
+                                      # return another person box owns in-box (that person's own and out-of-box returns:
+                                      # people one behind the other at the same azimuth, r54); 0 = off
     lik_wedge_fallback: bool = False  # docs/41: a box without any in-box radar cluster takes the range clusters of the
                                       # returns inside its BEV azimuth wedge (box left / right rays +- margin, any
                                       # height), scored by the wedge LR of the range_lik parameters ("wedge" block)
@@ -693,6 +703,45 @@ def fuse(dets: list[Det2D], radar: RadarFrame, calib: RigCalib, *, image: np.nda
         if on:
             owner[i] = (min(on, key=lambda k: g_rng[k] if g_rng[k] is not None else np.inf), 0.0)
     cand = [np.array([i for i in idx if owner[i][0] == k], int) for k, idx in enumerate(cand)]
+    wedge_own = None                                                   # docs/38 §13.6: exclusive azimuth wedges
+    lik_w = lik if (lik is not None and p.lik_wedge_mode != "off") else None
+    if lik_w is not None and lik_w.wedge is not None and p.lik_wedge_exclusive and n:
+        mg = np.radians(lik_w.wedge["margin_deg"])
+        az_pt = np.arctan2(radar.xyz[:, 1] - C[1], radar.xyz[:, 0] - C[0])
+        best = np.full(n, np.inf)
+        wedge_own = np.full(n, -1, int)
+        ivals = {}                                     # box -> (azimuth centre, half-width) of its wedge
+        for k, d in enumerate(dets):
+            if d.cls not in p.cluster_classes:
+                continue
+            bx1, by1, bx2, by2 = [float(v) for v in d.box]
+            vcm = 0.5 * (by1 + by2)
+            al = np.arctan2(*calib.pixel_ray(bx1, vcm)[[1, 0]])
+            ar = np.arctan2(*calib.pixel_ray(bx2, vcm)[[1, 0]])
+            lo, hi = min(al, ar) - mg, max(al, ar) + mg
+            mid, half = 0.5 * (lo + hi), max(0.5 * (hi - lo), 1e-4)
+            ivals[k] = (mid, half)
+            e = np.abs(np.angle(np.exp(1j * (az_pt - mid)))) / half
+            win = (e <= 1.0) & (e < best)
+            best[win], wedge_own[win] = e[win], k
+        if p.lik_wedge_claim_m > 0:                    # range claims: another person's in-box ranges in ITS direction
+            claims = [(j, np.sort(rng_c[idx_j])) for j, idx_j in enumerate(cand)
+                      if len(idx_j) and dets[j].cls in p.cluster_classes and j in ivals]
+            if claims:
+                mine = np.zeros((len(dets), n), bool)
+                for k, idx_k in enumerate(cand):
+                    mine[k, idx_k] = True
+                wedge_own = np.repeat(wedge_own[None, :], len(dets), 0)      # per box: its own view of the points
+                for k in ivals:
+                    for j, rj in claims:
+                        if j == k:
+                            continue
+                        mid_j, half_j = ivals[j]
+                        in_j = np.abs(np.angle(np.exp(1j * (az_pt - mid_j)))) <= half_j
+                        q = np.searchsorted(rj, rng_c)
+                        dmin = np.minimum(np.abs(rng_c - rj[np.clip(q, 0, len(rj) - 1)]),
+                                          np.abs(rng_c - rj[np.clip(q - 1, 0, len(rj) - 1)]))
+                        wedge_own[k, in_j & (dmin <= p.lik_wedge_claim_m) & ~mine[k]] = -1
 
     out = []
     for k, d in enumerate(dets):
@@ -834,7 +883,7 @@ def fuse(dets: list[Det2D], radar: RadarFrame, calib: RigCalib, *, image: np.nda
         if lik is not None and d.cls in p.cluster_classes:              # docs/38: range as a distribution
             det, dbg, rl_cues = _lik_detection(lik, p, d, k, idx, idx0, wk, mw, rng_c, uv, radar, calib, fx, model, dm_k,
                                                g_rng[k], occluded, mono, ground, conflict, reliability, v_comp, sigma_v,
-                                               ray, b_sig, ego_yaw_rate, ego_speed, C, _cq)
+                                               ray, b_sig, ego_yaw_rate, ego_speed, C, _cq, wedge_own=wedge_own)
             if _cq is not None:
                 rec = _cue_record(_cq, k, d, det, calib, p, radar, uv, rng_c, w_pt, wk, v_comp, mw, C, fx, g_rng[k],
                                   gate_rng[k], ground_bad[k], ground, bottom_ok, mono, cam, cam_src, conflict, None, None,
@@ -1056,7 +1105,7 @@ def _cluster_sel(mem: np.ndarray, rng_c, wk, v_comp, sigma_v, p: FusionParams) -
 
 
 def _wedge_clusters(W: dict, radar: RadarFrame, uv, rng_c, C, box, a_left: float, a_right: float,
-                    mirror_members: bool = False) -> list:
+                    mirror_members: bool = False, own=None, k: int = -1) -> list:
     """docs/41: range clusters (1-D, gap W["gap_m"]) of the kept returns whose azimuth from the camera centre lies within
     the box's left / right rays +- W["margin_deg"] (any height; image row not used), with the wedge-LR features: count,
     in-box count, lateral spread, azimuth offset, moving share, whole-scan RCS z, mirror returns (below ground / under
@@ -1072,6 +1121,8 @@ def _wedge_clusters(W: dict, radar: RadarFrame, uv, rng_c, C, box, a_left: float
     xy = radar.xyz[:, :2] - np.asarray(C, float)[:2]
     d_az = np.angle(np.exp(1j * (np.arctan2(xy[:, 1], xy[:, 0]) - mid)))
     wedge = (np.abs(d_az) <= half) & (rng_c <= W["max_range"])
+    if own is not None:                                  # exclusive wedges: only the returns this box owns
+        wedge &= (own[k] if own.ndim == 2 else own) == k
     below = st.below_ground if st.below_ground is not None else np.zeros(n, bool)
     mirror = wedge & (below | (radar.xyz[:, 2] < W["mirror_z"]))
     base = st.keep
@@ -1098,7 +1149,7 @@ def _wedge_clusters(W: dict, radar: RadarFrame, uv, rng_c, C, box, a_left: float
 
 def _lik_detection(lik, p: FusionParams, d: Det2D, k: int, idx, idx0, wk, mw, rng_c, uv, radar: RadarFrame, calib: RigCalib,
                    fx: float, model, dm_k, g_raw, occluded: bool, mono, ground, conflict, reliability, v_comp, sigma_v,
-                   ray, b_sig: float, yaw: float, speed: float, C, _cq):
+                   ray, b_sig: float, yaw: float, speed: float, C, _cq, wedge_own=None):
     """docs/38: the range distribution of one person box (rcmot.fusion.range_lik) and its Det3D.
     Cue inputs exactly as the docs/37 fit read them from the cue dumps (research/range_unc/cues.py, model.box_inputs):
     height prior from the box-centre column rays with H 1.8 m (no learned height), ground contact from the raw box-bottom
@@ -1171,11 +1222,18 @@ def _lik_detection(lik, p: FusionParams, d: Det2D, k: int, idx, idx0, wk, mw, rn
     log_bev, n_bev = None, 0                             # docs/38 §13.6: range-only wedge evidence
     if p.lik_wedge_mode != "off" and lik.wedge is not None and not wedge_used and (p.lik_wedge_mode == "prod" or not clusters):
         wcl = _wedge_clusters(lik.wedge, radar, uv, rng_c, C, (x1, y1, x2, y2), float(np.arctan2(dl[1], dl[0])),
-                              float(np.arctan2(dr[1], dr[0])), mirror_members=p.lik_wedge_mirror)
+                              float(np.arctan2(dr[1], dr[0])), mirror_members=p.lik_wedge_mirror, own=wedge_own, k=k)
         if wcl:
             lw, _ = lik.wedge_term(wcl)
             if lw is not None:
                 log_bev, n_bev = (p.lik_wedge_beta if p.lik_wedge_mode == "prod" else 1.0) * lw, len(wcl)
+                base = [t for t in (sum(terms.values()) if terms else None, log_rad) if t is not None]
+                if p.lik_wedge_window > 0 and base:          # expected window of the posterior without the wedge
+                    p0 = posterior(base)
+                    win = p0 >= p.lik_wedge_window * p0.max()
+                    k1 = max(int(round(1.0 / (GRID[1] - GRID[0]))), 1)
+                    win = np.convolve(win.astype(float), np.ones(2 * k1 + 1), mode="same") > 0
+                    log_bev = np.where(win, log_bev, 0.0)
     log_cam = sum(terms.values()) if terms else None
     if log_cam is None and log_rad is None and log_bev is None:
         return None, None, cues
