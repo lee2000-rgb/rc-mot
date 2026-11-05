@@ -28,6 +28,9 @@ class RadarFrame:
     static_mask: np.ndarray | None = None
     peer: np.ndarray | None = None     # Bosch idx_azimuth_ambiguity_peer
     az_prob: np.ndarray | None = None  # Bosch azimuth_angle_probability (0..255)
+    el_prob: np.ndarray | None = None  # Bosch elevation_angle_probability (0..255)
+    var_az: np.ndarray | None = None   # Bosch azimuth_angle_variance [rad^2] (estimator-internal, docs/46 §3)
+    var_el: np.ndarray | None = None   # Bosch elevation_angle_variance [rad^2]
     stats: object | None = None        # rcmot.radar.scan_stats.ScanStats of this scan
     bag_t: float | None = None         # bag receive time when replayed (timeline)
     clock_offset_s: float | None = None  # header -> bag clock offset applied to `stamp` (sensor-clock radars, bag replay)

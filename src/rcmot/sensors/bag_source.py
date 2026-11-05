@@ -115,6 +115,10 @@ def radar_frame(arr: np.ndarray, stamp: float, calib: RigCalib) -> RadarFrame:
         rf.peer = np.where((p >= 0) & (p < len(arr)), remap[np.clip(p, 0, len(arr) - 1)], -1)
     if "azimuth_angle_probability" in arr.dtype.names:
         rf.az_prob = g("azimuth_angle_probability")
+    for src, dst in (("elevation_angle_probability", "el_prob"), ("azimuth_angle_variance", "var_az"),
+                     ("elevation_angle_variance", "var_el")):                     # Bosch quality fields (docs/46)
+        if src in arr.dtype.names:
+            setattr(rf, dst, g(src))
     return rf
 
 

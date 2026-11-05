@@ -114,7 +114,7 @@ python3 scripts/eval_suite.py run --tag base --segs conti,cf,val -j 2     # 여�
 ## 기본값 (2026-11-04)
 
 - 거리: 거리 확률분포 방식(`fusion.range_model: lik`). 트랙은 분포와 자기 예측을 곱해 거리를 고른다. 트랙별 카메라 편향은 끔(`tracker.lik_bias: false`).
-- 레이더 전처리: 점 신뢰도 α는 쓰지 않음(`scan_stats.alpha_source: none`). 약하고 외딴 점은 스캔 전체 RCS z < −2이면서 1.5 m 안에 이웃이 없는 점(`drop_source: rcs_scan`), 방위 모호성 짝은 RCS가 낮은 쪽을 버림(`ambig_source: rcs`), 지면 아래 다중경로는 지면선 − max(3·s(r), 1 m) 아래(고각 잡음 s(r) = √(0.03² + (0.0075 r)²), `ground_sigma: elev`). 자차 속도는 수평 좌표계에서 적합(`ego_frame: level`). 거리 구간별 SNR 통계는 쓰지 않는다.
+- 레이더 전처리: 점 신뢰도 α는 쓰지 않음(`scan_stats.alpha_source: none`). 약하고 외딴 점은 스캔 전체 RCS z < −2이면서 1.5 m 안에 이웃이 없는 점(`drop_source: rcs_scan`), 고도 모호성 짝(`idx_azimuth_ambiguity_peer`, 이름과 달리 고도 모호성)은 수평 z가 지면 모델 + 1 m에서 먼 쪽을 버림(`ambig_source: z`, 11-05), 지면 아래 다중경로는 지면선 − max(3·s(r), 1 m) 아래(고각 잡음 s(r) = √(0.03² + (0.0075 r)²), `ground_sigma: elev`). 자차 속도는 수평 좌표계에서 적합(`ego_frame: level`). 거리 구간별 SNR 통계는 쓰지 않는다.
 - BEV 쐐기 증거(지면 아래 거울상 포함, 거리 전용): 구현돼 있고 꺼짐(`fusion.lik_wedge_mode`).
 - 영상 깊이 단서: 켬(`depth_map.enable: true`, DA-V2 Small 518×924, 3프레임마다, 25 m까지). 실시간 설정(`hdx_agx_live`, `conti_live`)과 작업량·재구성 프로필은 끔(Orin 시간 측정 전 / VGGT-Omega GPU 메모리). Orin에서 켤 때는 `every: 6`.
 - 칸 기억(정지 중 배경 학습): 꺼짐(`cell_memory.enable`). 쐐기 대체: 꺼짐.

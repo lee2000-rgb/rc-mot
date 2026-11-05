@@ -164,9 +164,22 @@ class ScanStatsParams:
     drop_source: str = "rcs_scan"     # which z is "weak": "rcs_scan" whole-scan RCS z (ScanStats.z_rcs_scan; default since
                                       # 11-04, docs/38 §12.7), "snr" range-binned SNR z (until 11-04; Bosch SNR caps at 31 dB,
                                       # docs/38 §12.1), "none" (no weak drop; ambiguity pairs / below-ground still dropped)
-    ambig_source: str = "rcs"         # azimuth-ambiguity pair: drop the member with the lower "rcs" (ties -> lower SNR;
-                                      # default since 11-04) or the lower range-binned "snr" z (until 11-04: both members
-                                      # of a near pair often sit at the 31 dB SNR cap -> tie -> both kept)
+    ambig_source: str = "z"           # angle-ambiguity pair (Bosch idx_azimuth_ambiguity_peer = ELEVATION ambiguity, same
+                                      # range / azimuth / Doppler / SNR, docs/48 §5.2): "z" keeps the member whose level z
+                                      # is nearer ground + ambig_z_ref (the mirror is above or below the real one; LiDAR:
+                                      # right member 90 % vs RCS 50 %; default since 11-05, r57 HOTA +0.004 / IDsw -8,
+                                      # docs/48 §5.8), "rcs" drops the lower-RCS member (ties -> lower SNR; 11-04..11-05),
+                                      # "snr" the lower range-binned SNR z (until 11-04)
+    ambig_z_ref: float = 1.0          # [m] expected height above the ground model of a real return ("z" rule)
+    # Bosch per-return quality fields (docs/48 §5.3): score q = quality_b + w . (rcs, P_az/255, P_el/255, log10 var_az,
+    # log10 var_el), logistic fit in-box right vs wrong returns (research/bosch_fields/quality_lr.json). Not adopted:
+    # r57 alpha HOTA -0.006, drop -0.005 / BEV HOTA -0.008 (far person returns lost), docs/48 §5.8
+    quality_source: str = "none"      # "none" | "bosch_lr" (only when the frame carries the fields; Continental: none)
+    quality_mode: str = "alpha"       # "alpha": alpha *= sigmoid((q - thr) / tau) | "drop": keep = False below thr
+    quality_thr: float = -2.51        # 99 % of person returns score above it (12 Bosch segments)
+    quality_tau: float = 1.0
+    quality_w: tuple = (-0.165, 3.781, -1.479, 0.216, -1.88)
+    quality_b: float = -15.873
 
 
 @dataclass
@@ -303,9 +316,9 @@ class ScanStatistician:
 
     def compute(self, stamp: float, xyz: np.ndarray, v_r: np.ndarray, snr: np.ndarray, rcs: np.ndarray,
                 peer: np.ndarray | None = None, xyz_level: np.ndarray | None = None,
-                R_level: np.ndarray | None = None) -> ScanStats:
+                R_level: np.ndarray | None = None, az_prob=None, el_prob=None, var_az=None, var_el=None) -> ScanStats:
         """xyz in the radar frame (Doppler geometry); xyz_level (same points, gravity-levelled) enables the
-        below-ground filter."""
+        below-ground filter. az_prob / el_prob / var_az / var_el: Bosch quality fields (quality_source, ambiguity "z")."""
         p = self.p
         n = len(v_r)
         r = np.linalg.norm(xyz, axis=1)
@@ -345,8 +358,23 @@ class ScanStatistician:
         c_snr = local_contrast_polar(r, az, snr, k=p.k_local, dr=p.polar_dr, daz=p.polar_daz, floor=p.mad_floor_db)
         contrast = combine_contrast(c_rcs, c_snr, snr)
 
-        # clutter: weak AND isolated, plus the weaker member of azimuth-ambiguity pairs (drop_source, ambig_source)
+        if p.quality_source == "bosch_lr" and az_prob is not None and el_prob is not None and var_az is not None \
+                and var_el is not None and n:
+            X = np.c_[rcs, np.asarray(az_prob, float) / 255.0, np.asarray(el_prob, float) / 255.0,
+                      np.log10(np.asarray(var_az, float) + 1e-14), np.log10(np.asarray(var_el, float) + 1e-14)]
+            q = p.quality_b + X @ np.asarray(p.quality_w, float)
+            if p.quality_mode == "alpha":
+                alpha = alpha * sigmoid((q - p.quality_thr) / max(p.quality_tau, 1e-3))
+        else:
+            q = None
+        g_z_pre = None
+        if p.ground_enable and xyz_level is not None and n:          # ground model (also used by the "z" pair rule)
+            rh_pre = np.linalg.norm(xyz_level[:, :2], axis=1)
+            g_z_pre, g_s_pre = self.ground_level(stamp, rh_pre, xyz_level[:, 2])
+        # clutter: weak AND isolated, plus the weaker member of angle-ambiguity pairs (drop_source, ambig_source)
         keep = np.ones(n, bool)
+        if q is not None and p.quality_mode == "drop":
+            keep &= q >= p.quality_thr
         if p.drop_source == "none":
             weak = np.zeros(n, bool)
         else:
@@ -362,14 +390,17 @@ class ScanStatistician:
                     continue
                 if p.ambig_source == "snr":
                     weaker = z_snr[i] < z_snr[j]
+                elif p.ambig_source == "z" and g_z_pre is not None and np.isfinite(g_z_pre[i]) and np.isfinite(g_z_pre[j]):
+                    weaker = abs(xyz_level[i, 2] - g_z_pre[i] - p.ambig_z_ref) > abs(xyz_level[j, 2] - g_z_pre[j] - p.ambig_z_ref) \
+                        or (xyz_level[i, 2] == xyz_level[j, 2] and rcs[i] < rcs[j])
                 else:
                     weaker = rcs[i] < rcs[j] or (rcs[i] == rcs[j] and snr[i] < snr[j])
                 if weaker:
                     keep[i] = False
         below, g_z, g_w, keep_pg = None, None, None, None
         if p.ground_enable and xyz_level is not None and n:
-            rh = np.linalg.norm(xyz_level[:, :2], axis=1)
-            g_z, g_s = self.ground_level(stamp, rh, xyz_level[:, 2])
+            rh = rh_pre
+            g_z, g_s = g_z_pre, g_s_pre
             if p.ground_sigma == "elev":
                 g_s = np.hypot(p.ground_s0, rh * p.ground_el_sigma)
             line = g_z - np.maximum(p.ground_k * g_s, p.ground_margin)

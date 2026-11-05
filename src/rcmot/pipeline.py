@@ -193,7 +193,8 @@ class Pipeline:
 
     def _radar(self, radar: RadarFrame) -> bool:
         st = self.stats.compute(radar.stamp, radar.xyz_radar, radar.v_r, radar.snr, radar.rcs, radar.peer, radar.xyz,
-                                R_level=self.calib.R_lr)
+                                R_level=self.calib.R_lr, az_prob=radar.az_prob, el_prob=radar.el_prob,
+                                var_az=radar.var_az, var_el=radar.var_el)
         radar.stats = st
         ok = st.ego_valid and np.isfinite(st.v_sensor).all() and np.linalg.norm(st.v_sensor) <= self.ego_max \
             and (self.ego_age > 1.0 or np.linalg.norm(st.v_sensor - self.ego_vel) <= self.ego_max_jump * (1.0 + self.ego_age / 0.066))

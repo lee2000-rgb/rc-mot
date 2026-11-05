@@ -55,7 +55,8 @@ ego_comp: true                        # 3D ego-motion compensation (MOTDD CMC an
 # scan_stats:                         # rcmot.radar.scan_stats.ScanStatsParams (docs/35 §3, docs/38 §12)
 #   alpha_source: none                # point reliability weight off (alpha = 1) since 11-03
 #   drop_source: rcs_scan             # weak-and-isolated: whole-scan RCS z < -2 and no point within 1.5 m (since 11-04)
-#   ambig_source: rcs                 # azimuth-ambiguity pair: drop the lower-RCS member (since 11-04)
+#   ambig_source: z                   # elevation-ambiguity pair: keep the member nearer ground + 1 m (since 11-05, docs/48 §5.8;
+#                                     # rcs = drop the lower-RCS member, 11-04..11-05)
 #   ground_sigma: elev                # below-ground drop: z < ground line - max(3 s(r), 1 m), s(r) = hypot(0.03, 0.0075 r)
 #                                     # (since 11-04, docs/38 §13; "mad" = the old per-bin MAD, meaningless beyond 35 m)
 # fusion (BEV wedge evidence, docs/38 §13.6, off): lik_wedge_mode off | fallback | prod, lik_wedge_beta 0.5,
